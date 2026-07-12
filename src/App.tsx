@@ -1,0 +1,87 @@
+/* Application shell: header, sidebars, viewport, playback bar,
+   global keyboard shortcuts and session restore. */
+
+import { useEffect } from 'react';
+import { TopBar } from './components/TopBar';
+import { SidebarLeft } from './components/SidebarLeft';
+import { SidebarRight, useExportState } from './components/SidebarRight';
+import { Viewport } from './components/Viewport';
+import { PlaybackBar } from './components/PlaybackBar';
+import { ToastHost, toast } from './components/ui/toast';
+import { installPasteHandler } from './image/importers';
+import { restorePersistedImage } from './image/source';
+import { engine } from './engine/Engine';
+import { store } from './state/store';
+import { exportStill, exportAnimation } from './engine/exporter';
+import { useSourceImage } from './hooks/useSourceImage';
+
+function isTypingTarget(t: EventTarget | null): boolean {
+  if (!(t instanceof HTMLElement)) return false;
+  return t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable;
+}
+
+export default function App() {
+  const ex = useExportState();
+  const img = useSourceImage();
+
+  /* paste-to-import + session restore */
+  useEffect(() => {
+    const uninstall = installPasteHandler();
+    void restorePersistedImage().then(ok => {
+      if (ok) toast('Previous session restored');
+    });
+    return uninstall;
+  }, []);
+
+  /* global shortcuts (never while typing) */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isTypingTarget(e.target)) return;
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault(); store.undo(); return;
+      }
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault(); store.redo(); return;
+      }
+      if (mod) return;
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          if (engine.hasImage()) engine.toggle();
+          break;
+        case 'f': case 'F':
+          if (engine.hasImage()) engine.fitToView();
+          break;
+        case 'r': case 'R':
+          engine.resetCamera();
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  /* header export runs the selected animation format when an animation
+     preset is active, otherwise a still */
+  const headerExport = () => {
+    const s = store.get();
+    if (s.animation.preset === 'none') void exportStill(s);
+    else void exportAnimation(s);
+  };
+
+  return (
+    <div className="app">
+      <TopBar onExport={headerExport} exporting={ex.active} />
+      <div className="app-main">
+        <SidebarLeft />
+        <div className="app-center">
+          <Viewport />
+          {img ? <PlaybackBar /> : null}
+        </div>
+        <SidebarRight />
+      </div>
+      <ToastHost />
+    </div>
+  );
+}
