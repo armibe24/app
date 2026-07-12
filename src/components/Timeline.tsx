@@ -52,7 +52,7 @@ export function Timeline() {
     return Math.min(1, Math.max(0, (clientX - r.left - LABEL_W) / Math.max(1, r.width - LABEL_W)));
   };
   const snap = (f: number) =>
-    Math.min(0.9999, Math.round(f * totalFrames) / totalFrames);
+    Math.min(1, Math.round(f * totalFrames) / totalFrames);
 
   const onScrub = (e: React.PointerEvent) => {
     engine.setTime(fracFromX(e.clientX) * dur);

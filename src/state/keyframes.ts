@@ -106,15 +106,18 @@ function withTrack(map: KeyframeMap, path: string, next: Keyframe[]): KeyframeMa
   return out;
 }
 
-const EPS = 1e-3; // ~same frame
+// "same key slot" tolerance — must stay below the tightest frame
+// spacing (60 s × 60 fps → 2.8e-4 between frames)
+const EPS = 1e-4;
 
 export function upsertKeyframe(path: string, t: number, v: number): void {
   const map = store.get().keyframes;
   const track = map[path] ?? [];
-  const hit = track.find(k => Math.abs(k.t - t) < EPS);
+  const clamped = Math.min(1, Math.max(0, t)); // t = 1 is the loop end, a valid key slot
+  const hit = track.find(k => Math.abs(k.t - clamped) < EPS);
   const next = hit
     ? track.map(k => (k === hit ? { ...k, v } : k))
-    : [...track, { id: genId(), t, v, ease: 'linear' as EaseType }];
+    : [...track, { id: genId(), t: clamped, v, ease: 'linear' as EaseType }];
   store.set('keyframes', withTrack(map, path, next));
 }
 
@@ -131,7 +134,9 @@ export function removeKeyframe(path: string, id: string): void {
 export function moveKeyframe(path: string, id: string, t: number): void {
   const map = store.get().keyframes;
   const track = map[path] ?? [];
-  const clamped = Math.min(0.9999, Math.max(0, t));
+  const clamped = Math.min(1, Math.max(0, t));
+  // don't land on another key of the same track
+  if (track.some(k => k.id !== id && Math.abs(k.t - clamped) < EPS)) return;
   store.set('keyframes', withTrack(map, path,
     track.map(k => (k.id === id ? { ...k, t: clamped } : k))));
 }

@@ -13,12 +13,14 @@ import {
   isKeyable, evalTrack, upsertKeyframe, removeKeyframe, keyframeAt,
 } from '../../state/keyframes';
 import { engine } from '../../engine/Engine';
+import { ColorPickerPopover } from './ColorPicker';
 
-/** Current loop time snapped to the playback frame grid. */
+/** Playhead time snapped to the playback frame grid. The loop end is
+    a valid key position (t = 1) distinct from t = 0. */
 function snappedLoopTime(): number {
   const s = store.get();
   const frames = Math.max(1, Math.round(s.playback.duration * s.playback.fps));
-  return Math.min(0.9999, Math.round(engine.getLoopProgress() * frames) / frames);
+  return Math.min(1, Math.round(engine.getPlayheadProgress() * frames) / frames);
 }
 
 /* ---------------- collapsible section ---------------- */
@@ -90,8 +92,12 @@ export function SliderRow(props: {
   }, [hasTrack]);
 
   const u = snappedLoopTime();
-  const value = hasTrack ? evalTrack(track, engine.getLoopProgress()) : baseValue;
   const keyHere = hasTrack ? keyframeAt(track, u) : undefined;
+  // an exact key at the playhead wins over interpolation (matters at
+  // the loop end, where evalTrack wraps 1 → 0)
+  const value = keyHere ? keyHere.v
+    : hasTrack ? evalTrack(track, engine.getLoopProgress())
+    : baseValue;
 
   useEffect(() => { if (editing) inputRef.current?.select(); }, [editing]);
 
@@ -354,6 +360,8 @@ export function ColorRow(props: {
 }) {
   const value = useValue<string>(props.path);
   const [draft, setDraft] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLSpanElement>(null);
   const invalid = draft !== null && !HEX_RE.test(draft);
 
   const commit = (raw: string) => {
@@ -363,18 +371,36 @@ export function ColorRow(props: {
     setDraft(null);
   };
 
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: PointerEvent) => {
+      if (!anchorRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  }, [open]);
+
   return (
     <div className={`control${props.disabled ? ' disabled' : ''}`}>
       <div className="control-head"><Label text={props.label} path={props.path} tooltip={props.tooltip} /></div>
       <div className="colorfield-body">
-        <button className="color-swatch" type="button" style={{ background: value }} title="Pick a color">
-          <input
-            type="color"
-            value={value}
-            onChange={e => store.set(props.path, e.target.value)}
+        <span className="cpick-anchor" ref={anchorRef}>
+          <button
+            className={`color-swatch${open ? ' open' : ''}`}
+            type="button"
+            style={{ background: value }}
+            title="Open the color picker"
             disabled={props.disabled}
+            onClick={() => setOpen(o => !o)}
           />
-        </button>
+          {open ? (
+            <ColorPickerPopover
+              color={value}
+              onChange={hex => store.set(props.path, hex)}
+              onClose={() => setOpen(false)}
+            />
+          ) : null}
+        </span>
         <input
           className={`colorfield-hexinput${invalid ? ' invalid' : ''}`}
           value={draft ?? value}

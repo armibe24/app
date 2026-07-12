@@ -662,10 +662,17 @@ export class Engine {
     );
   }
 
-  /** Current normalized loop time (0..1). */
+  /** Current normalized loop time (0..1), wrapping at the loop end. */
   getLoopProgress(): number {
     const dur = Math.max(0.1, this.settings?.playback.duration ?? 4);
     return ((this.time % dur) + dur) % dur / dur;
+  }
+
+  /** Playhead position (0..1) WITHOUT wrapping — the scrubbed end of
+      the loop reads as 1, so keyframes can be placed on the last frame. */
+  getPlayheadProgress(): number {
+    const dur = Math.max(0.1, this.settings?.playback.duration ?? 4);
+    return Math.min(1, Math.max(0, this.time / dur));
   }
 
   private frame(ts: number): void {
