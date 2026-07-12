@@ -6,9 +6,20 @@
 import {
   ReactNode, useEffect, useRef, useState, KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
-import { ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, Diamond } from 'lucide-react';
 import { store, useSettings, getPath } from '../../state/store';
 import { defaultSettings } from '../../state/types';
+import {
+  isKeyable, evalTrack, upsertKeyframe, removeKeyframe, keyframeAt,
+} from '../../state/keyframes';
+import { engine } from '../../engine/Engine';
+
+/** Current loop time snapped to the playback frame grid. */
+function snappedLoopTime(): number {
+  const s = store.get();
+  const frames = Math.max(1, Math.round(s.playback.duration * s.playback.fps));
+  return Math.min(0.9999, Math.round(engine.getLoopProgress() * frames) / frames);
+}
 
 /* ---------------- collapsible section ---------------- */
 
@@ -60,20 +71,45 @@ export function SliderRow(props: {
   unit?: string; decimals?: number; tooltip?: string;
   disabled?: boolean; disabledReason?: string;
 }) {
-  const value = useValue<number>(props.path);
+  const s = useSettings();
+  const baseValue = getPath(s, props.path) as number;
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const decimals = props.decimals ?? ((props.step ?? 1) < 1 ? 2 : 0);
 
+  const keyable = isKeyable(props.path);
+  const track = keyable ? s.keyframes[props.path] : undefined;
+  const hasTrack = !!track && track.length > 0;
+
+  /* re-render on playhead movement so keyframed values track the loop */
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!hasTrack) return;
+    return engine.onTick(() => force(n => n + 1));
+  }, [hasTrack]);
+
+  const u = snappedLoopTime();
+  const value = hasTrack ? evalTrack(track, engine.getLoopProgress()) : baseValue;
+  const keyHere = hasTrack ? keyframeAt(track, u) : undefined;
+
   useEffect(() => { if (editing) inputRef.current?.select(); }, [editing]);
+
+  const applyValue = (v: number) => {
+    const clamped = Math.min(props.max, Math.max(props.min, v));
+    if (hasTrack) upsertKeyframe(props.path, u, clamped);
+    else store.set(props.path, clamped);
+  };
 
   const commitDraft = () => {
     const n = parseFloat(draft);
-    if (!Number.isNaN(n)) {
-      store.set(props.path, Math.min(props.max, Math.max(props.min, n)));
-    }
+    if (!Number.isNaN(n)) applyValue(n);
     setEditing(false);
+  };
+
+  const toggleKey = () => {
+    if (keyHere) removeKeyframe(props.path, keyHere.id);
+    else upsertKeyframe(props.path, u, value);
   };
 
   const title = props.disabled ? props.disabledReason : props.tooltip;
@@ -81,6 +117,21 @@ export function SliderRow(props: {
     <div className={`control${props.disabled ? ' disabled' : ''}`} title={props.disabled ? props.disabledReason : undefined}>
       <div className="control-head">
         <Label text={props.label} path={props.path} tooltip={title} />
+        {keyable ? (
+          <button
+            type="button"
+            className={`keybtn${hasTrack ? ' has-track' : ''}${keyHere ? ' on-key' : ''}`}
+            title={keyHere
+              ? 'Remove the keyframe at the playhead'
+              : hasTrack
+                ? 'Add a keyframe at the playhead (dragging the slider auto-keys)'
+                : 'Add a keyframe at the playhead — the track appears in the timeline'}
+            onClick={toggleKey}
+          >
+            <Diamond size={9} strokeWidth={2.6}
+              fill={keyHere ? 'currentColor' : 'none'} />
+          </button>
+        ) : null}
         <div className="control-valuebox">
           {editing ? (
             <input
@@ -111,9 +162,9 @@ export function SliderRow(props: {
       <input
         type="range"
         min={props.min} max={props.max} step={props.step ?? 0.01}
-        value={value}
+        value={Number.isFinite(value) ? value : props.min}
         disabled={props.disabled}
-        onChange={e => store.set(props.path, parseFloat(e.target.value))}
+        onChange={e => applyValue(parseFloat(e.target.value))}
       />
     </div>
   );

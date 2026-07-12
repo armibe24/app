@@ -17,14 +17,26 @@ Then open http://localhost:5173.
 
 ## Workflow
 
+Everything lives in one right-hand sidebar with a vertical icon rail
+(image · geometry · height · animation · appearance · camera & frame ·
+export):
+
 1. **Paste** (Ctrl/⌘+V), drop or import a PNG / JPEG / WebP (alpha supported).
 2. Pick a **geometry style** — point cloud, grid heightfield or scanlines.
 3. Adjust the **height** (source, amount, direction, contrast…).
 4. Pick an **animation preset** and fine-tune a handful of controls.
-5. Frame it with the **camera** and choose a **background**.
-6. **Preview the loop** in the playback bar (scrubbing supported).
-7. **Export** — PNG/JPEG/WebP stills, WebM video, PNG sequence (zip), or MP4
-   where the browser encoder supports it.
+5. Frame the shot in the **Camera tab**: render **ratio + resolution**,
+   black-by-default background (solid/gradient/transparent) and a
+   **passepartout** slider that dims the viewport outside the frame.
+6. Optionally **keyframe** any live control: click the ◇ next to a slider —
+   the property gets a track in the timeline, dragging the slider auto-keys
+   at the playhead, diamonds are draggable (frame-snapped) and each segment
+   has easing (linear, ease in/out/in-out, hold). Tracks wrap around the
+   loop end, so keyframed loops stay seamless.
+7. **Preview the loop** in the timeline (scrubbing supported).
+8. **Export** — PNG/JPEG/WebP stills, WebM video, PNG sequence (zip), or MP4
+   where the browser encoder supports it. Keyframes are evaluated
+   deterministically per exported frame.
 
 ## Highlights
 
@@ -36,6 +48,10 @@ Then open http://localhost:5173.
   scanline motion, plus loop-safe global rotation and camera sway.
 - **Eight height sources** — luminance (±), RGB channels, alpha, Sobel edges
   and radial gradient, with contrast/gamma/blur/clamp processing.
+- **Keyframe tracks with easing** — any uniform-driven control (depth,
+  animation parameters, appearance, object transform, perspective) can be
+  keyed; tracks appear as rows in a Sonitus-style timeline with a label
+  column, per-second ruler and draggable diamond keys.
 - **Local persistence** — settings auto-save to localStorage, the last image
   is restored from IndexedDB, and projects can be exported/imported as JSON
   (images are not embedded; reimport after loading a project).

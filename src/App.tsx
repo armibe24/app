@@ -3,10 +3,9 @@
 
 import { useEffect } from 'react';
 import { TopBar } from './components/TopBar';
-import { SidebarLeft } from './components/SidebarLeft';
-import { SidebarRight, useExportState } from './components/SidebarRight';
+import { Sidebar, useExportState } from './components/Sidebar';
 import { Viewport } from './components/Viewport';
-import { PlaybackBar } from './components/PlaybackBar';
+import { Timeline } from './components/Timeline';
 import { ToastHost, toast } from './components/ui/toast';
 import { installPasteHandler } from './image/importers';
 import { restorePersistedImage } from './image/source';
@@ -74,12 +73,11 @@ export default function App() {
     <div className="app">
       <TopBar onExport={headerExport} exporting={ex.active} />
       <div className="app-main">
-        <SidebarLeft />
         <div className="app-center">
           <Viewport />
-          {img ? <PlaybackBar /> : null}
+          {img ? <Timeline /> : null}
         </div>
-        <SidebarRight />
+        <Sidebar />
       </div>
       <ToastHost />
     </div>

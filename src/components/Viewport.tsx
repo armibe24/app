@@ -126,9 +126,16 @@ export function Viewport() {
         </div>
       </div>
 
-      {/* export-crop frame */}
+      {/* render frame — the exact export crop; the passepartout slider
+          controls how strongly the outside area is dimmed */}
       {frame && img ? (
-        <div className="render-frame" style={{ width: frame.w, height: frame.h }}>
+        <div
+          className="render-frame"
+          style={{
+            width: frame.w, height: frame.h,
+            boxShadow: `0 0 0 9999px rgba(0,0,0,${s.viewport.passepartout.toFixed(3)})`,
+          }}
+        >
           <span className="rf-corner tl" /><span className="rf-corner tr" />
           <span className="rf-corner bl" /><span className="rf-corner br" />
           <span className="render-frame-label">{s.export.width} × {s.export.height}</span>

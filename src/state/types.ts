@@ -25,6 +25,22 @@ export type Projection = 'perspective' | 'orthographic';
 export type StillFormat = 'png' | 'jpeg' | 'webp';
 export type AnimFormat = 'webm' | 'png-seq' | 'mp4';
 
+export type EaseType = 'linear' | 'in' | 'out' | 'in-out' | 'hold';
+
+/** One keyframe on a numeric setting track. `t` is normalized loop
+    time (0..1) so tracks stay loop-safe when the duration changes;
+    the UI displays seconds/frames. */
+export interface Keyframe {
+  id: string;
+  t: number;
+  v: number;
+  ease: EaseType;
+}
+
+/** path → keyframe list (sorted by t). Only shader/transform-driven
+    numeric paths are keyable (see state/keyframes.ts). */
+export type KeyframeMap = Record<string, Keyframe[]>;
+
 export interface Settings {
   geometry: {
     mode: GeometryMode;
@@ -99,7 +115,13 @@ export interface Settings {
     fov: number;                                  // perspective strength
   };
   camera: { projection: Projection };
-  viewport: { showGrid: boolean; showAxes: boolean; showBox: boolean; showFrame: boolean };
+  viewport: {
+    showGrid: boolean; showAxes: boolean; showBox: boolean;
+    showFrame: boolean;
+    /** Dimming of the viewport outside the render frame (0..1). */
+    passepartout: number;
+  };
+  keyframes: KeyframeMap;
   export: {
     width: number; height: number; fps: number; duration: number;
     quality: number;          // 0..1 (jpeg/webp/webm bitrate scale)
@@ -148,12 +170,16 @@ export const defaultSettings: Settings = {
     solidColor: '#5fc6e8',
     depthFade: 0,
   },
-  background: { type: 'solid', colorA: '#071318', colorB: '#0e2a35' },
+  background: { type: 'solid', colorA: '#000000', colorB: '#0e2a35' },
   scene: {
     scale: 1, posX: 0, posY: 0, posZ: 0, rotX: 0, rotY: 0, rotZ: 0, fov: 45,
   },
   camera: { projection: 'perspective' },
-  viewport: { showGrid: false, showAxes: false, showBox: false, showFrame: false },
+  viewport: {
+    showGrid: false, showAxes: false, showBox: false,
+    showFrame: true, passepartout: 0.6,
+  },
+  keyframes: {},
   export: {
     width: 1080, height: 1080, fps: 30, duration: 4, quality: 0.85,
     transparent: false, fileName: 'pixelform',

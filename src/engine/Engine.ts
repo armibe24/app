@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Settings, cloneSettings } from '../state/types';
+import { evalTrack } from '../state/keyframes';
 import { SourceImage } from '../image/source';
 import { SampledImage, buildSample, computeHeight } from '../image/sampler';
 import {
@@ -16,6 +17,17 @@ import {
 import { VERT, FRAG } from './shaders';
 
 const TAU = Math.PI * 2;
+
+/** Mutating dot-path setter for the per-frame effective settings. */
+function setPathValue(obj: unknown, path: string, value: number): void {
+  const parts = path.split('.');
+  let node = obj as Record<string, unknown>;
+  for (let i = 0; i < parts.length - 1; i++) {
+    node = node[parts[i]] as Record<string, unknown>;
+    if (!node) return;
+  }
+  node[parts[parts.length - 1]] = value;
+}
 
 export interface EngineStats {
   count: number;
@@ -96,6 +108,9 @@ export class Engine {
   private rebuildTimer: ReturnType<typeof setTimeout> | null = null;
 
   private settings: Settings | null = null;
+  /** Per-frame working copy: keyframed paths are written into this
+      clone each frame before uniforms/transforms are applied. */
+  private effective: Settings | null = null;
   private bgTexture: THREE.CanvasTexture | null = null;
   private bgKey = '';
 
@@ -396,11 +411,43 @@ export class Engine {
   /* ---------------- settings application ---------------- */
 
   applySettings(s: Settings): void {
-    const prev = this.settings;
     this.settings = cloneSettings(s);
+    this.effective = cloneSettings(s);
+
+    this.applyUniforms(s);
+
+    /* camera projection */
+    this.setProjection(s.camera.projection);
+
+    /* helpers */
+    this.applyHelpers(s);
+
+    /* background */
+    this.applyBackground(s);
+
+    /* playback bounds */
+    if (this.time > s.playback.duration) this.time = 0;
+
+    /* expensive: geometry / sampling — debounce */
+    if (this.image) {
+      const keys = this.computeKeys(s);
+      if (keys.geom !== this.geomKey || keys.sample !== this.sampleKey || keys.height !== this.heightKey) {
+        if (this.rebuildTimer) clearTimeout(this.rebuildTimer);
+        const heightOnly = keys.sample === this.sampleKey && keys.geom.replace(keys.height, this.heightKey) === this.geomKey;
+        this.rebuildTimer = setTimeout(() => {
+          this.rebuildTimer = null;
+          if (this.settings) this.rebuildNow(this.settings);
+        }, heightOnly ? 50 : 130);
+      }
+    }
+  }
+
+  /** Cheap per-frame-safe application of every uniform/material/camera
+      value. Called on settings changes and (with keyframed values) on
+      every animation frame. */
+  private applyUniforms(s: Settings): void {
     const u = this.uniforms;
 
-    /* immediate: uniforms */
     u.uHeightAmt.value = s.height.amount;
     u.uHeightMode.value = s.height.direction === 'forward' ? 0 : s.height.direction === 'backward' ? 1 : 2;
     u.uHeightOffset.value = s.height.offset;
@@ -438,39 +485,15 @@ export class Engine {
     this.meshMat.depthWrite = !meshTransparent || s.geometry.grid.opacity >= 0.999;
     this.pointsMat.depthWrite = s.geometry.points.shape !== 'soft' && s.geometry.points.opacity >= 0.999;
 
-    /* object transform */
+    /* object position/scale (rotation is composed in applyTime) */
     this.root.position.set(s.scene.posX, s.scene.posY, s.scene.posZ);
     this.root.scale.setScalar(Math.max(0.01, s.scene.scale));
 
-    /* camera */
+    /* perspective strength */
     if (this.perspCam.fov !== s.scene.fov) {
       this.perspCam.fov = s.scene.fov;
       this.perspCam.updateProjectionMatrix();
     }
-    this.setProjection(s.camera.projection);
-
-    /* helpers */
-    this.applyHelpers(s);
-
-    /* background */
-    this.applyBackground(s);
-
-    /* playback bounds */
-    if (this.time > s.playback.duration) this.time = 0;
-
-    /* expensive: geometry / sampling — debounce */
-    if (this.image) {
-      const keys = this.computeKeys(s);
-      if (keys.geom !== this.geomKey || keys.sample !== this.sampleKey || keys.height !== this.heightKey) {
-        if (this.rebuildTimer) clearTimeout(this.rebuildTimer);
-        const heightOnly = keys.sample === this.sampleKey && keys.geom.replace(keys.height, this.heightKey) === this.geomKey;
-        this.rebuildTimer = setTimeout(() => {
-          this.rebuildTimer = null;
-          if (this.settings) this.rebuildNow(this.settings);
-        }, heightOnly ? 50 : 130);
-      }
-    }
-    void prev;
   }
 
   private imageHasAlpha(): boolean { return this.image?.hasAlpha ?? false; }
@@ -604,14 +627,29 @@ export class Engine {
   toggle(): void { this.playing ? this.pause() : this.play(); }
   restart(): void { this.time = 0; this.emitTick(); }
 
-  /** Apply deterministic animation state for time t (also used by export). */
+  /** Apply deterministic animation state for time t (also used by export).
+      Keyframed paths are evaluated at the normalized loop time and applied
+      through the same uniform mapping as regular settings. */
   applyTime(t: number): void {
-    const s = this.settings;
-    if (!s) return;
-    const dur = Math.max(0.1, s.playback.duration);
+    const base = this.settings;
+    if (!base) return;
+    const dur = Math.max(0.1, base.playback.duration);
     const progress = (t % dur + dur) % dur / dur;
     const phase = progress * TAU;
     this.uniforms.uPhase.value = phase;
+
+    let s = base;
+    const trackPaths = Object.keys(base.keyframes);
+    if (trackPaths.length > 0 && this.effective) {
+      for (const path of trackPaths) {
+        const track = base.keyframes[path];
+        if (!track || track.length === 0) continue;
+        const v = evalTrack(track, progress);
+        if (!Number.isNaN(v)) setPathValue(this.effective, path, v);
+      }
+      s = this.effective;
+      this.applyUniforms(s);
+    }
 
     const g = s.animation.global;
     const d2r = THREE.MathUtils.degToRad;
@@ -622,6 +660,12 @@ export class Engine {
         + (g.orbit ? Math.sin(phase) * g.orbitStrength * 0.5 : 0),
       d2r(s.scene.rotZ) + turns(g.rotZ) * progress * TAU,
     );
+  }
+
+  /** Current normalized loop time (0..1). */
+  getLoopProgress(): number {
+    const dur = Math.max(0.1, this.settings?.playback.duration ?? 4);
+    return ((this.time % dur) + dur) % dur / dur;
   }
 
   private frame(ts: number): void {

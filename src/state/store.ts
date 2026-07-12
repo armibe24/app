@@ -18,6 +18,12 @@ function mergeDeep<T>(base: T, over: unknown): T {
   const out: Record<string, unknown> = { ...(base as Record<string, unknown>) };
   for (const [k, v] of Object.entries(over as Record<string, unknown>)) {
     if (!(k in out)) continue;
+    if (k === 'keyframes') {
+      // dynamic record — persisted keys don't exist in the defaults,
+      // so take the stored map verbatim
+      if (v !== null && typeof v === 'object' && !Array.isArray(v)) out[k] = v;
+      continue;
+    }
     const b = out[k];
     if (b !== null && typeof b === 'object' && !Array.isArray(b) &&
         v !== null && typeof v === 'object' && !Array.isArray(v)) {
