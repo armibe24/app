@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { TopBar } from './components/TopBar';
-import { Sidebar, useExportState } from './components/Sidebar';
+import { Sidebar } from './components/Sidebar';
 import { Viewport } from './components/Viewport';
 import { Timeline } from './components/Timeline';
 import { ToastHost, toast } from './components/ui/toast';
@@ -11,7 +11,6 @@ import { installPasteHandler } from './image/importers';
 import { restorePersistedImage } from './image/source';
 import { engine } from './engine/Engine';
 import { store } from './state/store';
-import { exportStill, exportAnimation } from './engine/exporter';
 import { useSourceImage } from './hooks/useSourceImage';
 
 function isTypingTarget(t: EventTarget | null): boolean {
@@ -20,7 +19,6 @@ function isTypingTarget(t: EventTarget | null): boolean {
 }
 
 export default function App() {
-  const ex = useExportState();
   const img = useSourceImage();
 
   /* paste-to-import + session restore */
@@ -61,17 +59,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  /* header export runs the selected animation format when an animation
-     preset is active, otherwise a still */
-  const headerExport = () => {
-    const s = store.get();
-    if (s.animation.preset === 'none') void exportStill(s);
-    else void exportAnimation(s);
-  };
-
   return (
     <div className="app">
-      <TopBar onExport={headerExport} exporting={ex.active} />
+      <TopBar />
       <div className="app-main">
         <div className="app-center">
           <Viewport />

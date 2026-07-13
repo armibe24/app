@@ -26,6 +26,10 @@ const RULER_H = 24;
 const ROW_H = 46;
 const MAX_PPS = 4000;
 const ZOOM_KEY = 'pixelform:tlzoom:v1';
+const HEIGHT_KEY = 'pixelform:tlheight:v1';
+const MIN_AREA_H = RULER_H + ROW_H;      // ruler + one row
+const MAX_AREA_H = 420;
+const DEFAULT_AREA_H = RULER_H + ROW_H * 2;
 
 const EASE_SYMBOL: Record<EaseType, string> = {
   linear: '/', in: '~', out: '~', 'in-out': '~', hold: '□',
@@ -57,6 +61,30 @@ export function Timeline() {
   });
   const pendingScroll = useRef<number | null>(null);
   const [easeMenu, setEaseMenu] = useState<EaseMenuState | null>(null);
+  const [areaH, setAreaH] = useState(() => {
+    const n = parseFloat(localStorage.getItem(HEIGHT_KEY) ?? '');
+    return Number.isFinite(n)
+      ? Math.min(MAX_AREA_H, Math.max(MIN_AREA_H, n))
+      : DEFAULT_AREA_H;
+  });
+
+  /* drag the top edge to resize the track area (persisted) */
+  const onResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = areaH;
+    const move = (ev: PointerEvent) => {
+      const h = Math.min(MAX_AREA_H, Math.max(MIN_AREA_H, startH + (startY - ev.clientY)));
+      setAreaH(h);
+      try { localStorage.setItem(HEIGHT_KEY, String(h)); } catch { /* ignore */ }
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
 
   useEffect(() => engine.onTick(() => force(n => n + 1)), []);
 
@@ -229,6 +257,15 @@ export function Timeline() {
 
   return (
     <div className="timeline">
+      <div
+        className="tl-resizer"
+        title="Drag to resize the timeline"
+        onPointerDown={onResize}
+        onDoubleClick={() => {
+          setAreaH(DEFAULT_AREA_H);
+          try { localStorage.setItem(HEIGHT_KEY, String(DEFAULT_AREA_H)); } catch { /* ignore */ }
+        }}
+      />
       <div className="timeline-controls">
         <div className="tl-group tl-group--left">
           <div className="tl-transport">
@@ -294,7 +331,7 @@ export function Timeline() {
         </div>
       </div>
 
-      <div className="tl-area">
+      <div className="tl-area" style={{ height: areaH }}>
         {/* label column */}
         <div className="tl-labels" style={{ minHeight: contentH }}>
           <div className="tl-labels-head" style={{ height: RULER_H }}>

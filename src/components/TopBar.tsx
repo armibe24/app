@@ -1,20 +1,20 @@
-/* Header: brand, project actions, undo/redo, settings, export. */
+/* Header: brand, project actions, undo/redo, about + settings. */
 
 import { useState } from 'react';
 import {
-  FilePlus2, ImagePlus, Undo2, Redo2, Settings2, Download, Grid3X3,
+  FilePlus2, ImagePlus, Undo2, Redo2, Settings2, Info, Grid3X3,
 } from 'lucide-react';
 import { store, useSettings } from '../state/store';
 import { openFilePicker } from '../image/importers';
 import { clearSourceImage } from '../image/source';
-import { useSourceImage } from '../hooks/useSourceImage';
 import { SettingsModal } from './SettingsModal';
+import { AboutModal } from './AboutModal';
 import { toast } from './ui/toast';
 
-export function TopBar(props: { onExport: () => void; exporting: boolean }) {
+export function TopBar() {
   useSettings(); // rerender on every store change so undo/redo state stays fresh
-  const img = useSourceImage();
   const [showSettings, setShowSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   const newProject = () => {
     if (!window.confirm('Start a new project? This clears the image and resets all settings.')) return;
@@ -57,20 +57,16 @@ export function TopBar(props: { onExport: () => void; exporting: boolean }) {
       <div className="topbar-spacer" />
 
       <div className="topbar-group">
-        <button className="iconbtn" title="Project settings" onClick={() => setShowSettings(true)}>
-          <Settings2 size={14} strokeWidth={2.4} />
+        <button className="iconbtn" title="About & shortcuts" onClick={() => setShowAbout(true)}>
+          <Info size={14} strokeWidth={2.4} />
         </button>
-        <button
-          className="topbtn topbtn--primary"
-          onClick={props.onExport}
-          disabled={!img || props.exporting}
-          title={img ? 'Export with the current export settings' : 'Import an image first'}
-        >
-          <Download size={13} strokeWidth={2.4} /> Export
+        <button className="iconbtn" title="Settings — interface style & custom CSS" onClick={() => setShowSettings(true)}>
+          <Settings2 size={14} strokeWidth={2.4} />
         </button>
       </div>
 
       {showSettings ? <SettingsModal onClose={() => setShowSettings(false)} /> : null}
+      {showAbout ? <AboutModal onClose={() => setShowAbout(false)} /> : null}
     </header>
   );
 }

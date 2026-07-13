@@ -508,10 +508,18 @@ input[type="number"]{-moz-appearance:textfield;appearance:textfield}
 .tl-fitbtn:hover{color:var(--sky-blue);border-color:var(--accent);
   background:rgba(70,179,204,.08)}
 
+/* drag handle at the top edge — pull up/down to resize the track area */
+.tl-resizer{position:relative;height:8px;margin:-10px -14px -2px;cursor:ns-resize;
+  touch-action:none;flex-shrink:0}
+.tl-resizer::after{content:"";position:absolute;top:3px;left:50%;transform:translateX(-50%);
+  width:44px;height:3px;border-radius:999px;background:var(--line-strong);
+  transition:background var(--transition-fast),box-shadow var(--transition-fast)}
+.tl-resizer:hover::after{background:var(--accent);box-shadow:0 0 8px rgba(70,179,204,.5)}
+
 /* ---------- track area: label column + zoomable lanes (Sonitus) ---------- */
 .tl-area{display:flex;border-radius:var(--radius-small);border:1px solid var(--line);
-  background:rgba(0,0,0,.28);overflow:hidden;max-height:220px;overflow-y:auto;
-  user-select:none}
+  background:rgba(0,0,0,.28);overflow:hidden;overflow-y:auto;
+  user-select:none;flex-shrink:0}
 
 .tl-labels{width:200px;flex-shrink:0;display:flex;flex-direction:column;
   border-right:1px solid var(--line);background:var(--paper-2)}
@@ -581,8 +589,9 @@ input[type="number"]{-moz-appearance:textfield;appearance:textfield}
 .tl-key.hold{background:linear-gradient(180deg,rgba(0,0,0,.5),rgba(29,58,70,.9));
   border-color:var(--line-strong)}
 
-/* easing chip on the segment between two keyframes */
-.tl-easechip{position:absolute;top:50%;transform:translate(-50%,-50%);z-index:5;
+/* easing chip on the segment between two keyframes — sits vertically
+   below the track line, as in the Sonitus reference */
+.tl-easechip{position:absolute;top:calc(50% + 12px);transform:translate(-50%,-50%);z-index:5;
   min-width:20px;height:16px;padding:0 4px;
   display:inline-flex;align-items:center;justify-content:center;
   font-family:var(--font-mono);font-size:.6rem;font-weight:700;color:var(--ink-soft);
@@ -640,6 +649,29 @@ input[type="number"]{-moz-appearance:textfield;appearance:textfield}
   margin-bottom:6px}
 .modal-note code{color:var(--sky-blue);font-size:.64rem}
 .modal-actions{display:flex;justify-content:flex-end;margin-top:10px;gap:8px}
+
+/* settings: UI style cards */
+.style-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.style-card{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px 14px;
+  border-radius:var(--radius-med);border:1px solid var(--line-strong);cursor:pointer;
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(15,36,45,.9));
+  box-shadow:var(--gloss-inset);
+  transition:border-color var(--transition-fast),box-shadow var(--transition-fast),background var(--transition-fast)}
+.style-card:hover{border-color:var(--accent)}
+.style-card.selected{border-color:var(--sky-blue);
+  box-shadow:var(--gloss-inset),0 0 14px rgba(var(--sky-blue-rgb),.3)}
+.style-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-family:var(--font-mono);font-size:.66rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--ink)}
+.style-card.selected .style-card-head{color:var(--sky-blue)}
+.style-card-desc{font-family:var(--font-mono);font-size:.58rem;color:var(--ink-dim);line-height:1.6}
+
+/* settings: custom css file controls — clearly separated from the
+   style cards above */
+.customcss{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.customcss .modal-subhead{margin-top:0}
+.customcss-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
+.customcss-status{color:var(--ink-dim)}
 
 .about-table{width:100%;border-collapse:collapse;margin:4px 0 6px}
 .about-table th,.about-table td{font-family:var(--font-mono);font-size:.62rem;text-align:left;
