@@ -137,8 +137,9 @@ export class Engine {
       transparent: true, depthWrite: true, depthTest: true,
       side: THREE.DoubleSide,
     });
-    this.perspCam.position.set(1.6, 1.1, 4.6);
-    this.orthoCam.position.set(1.6, 1.1, 4.6);
+    // default view: straight-on front (orthographic by default)
+    this.perspCam.position.set(0, 0, 4.6);
+    this.orthoCam.position.set(0, 0, 4.6);
   }
 
   /* ---------------- lifecycle ---------------- */
@@ -239,7 +240,7 @@ export class Engine {
     if (!this.controls) return;
     this.controls.target.set(0, 0, 0);
     const cam = this.activeCamera();
-    cam.position.set(1.6, 1.1, 4.6);
+    cam.position.set(0, 0, 4.6);
     if (cam instanceof THREE.OrthographicCamera) { cam.zoom = 1; cam.updateProjectionMatrix(); }
     this.controls.update();
     this.syncOrtho();

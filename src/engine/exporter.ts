@@ -212,10 +212,28 @@ async function exportWebMOrMp4(s: Settings, kind: 'webm' | 'mp4'): Promise<void>
 
     let encodeError: Error | null = null;
     const encoder = new VideoEncoder({
-      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      output: (chunk, meta) => {
+        try {
+          muxer.addVideoChunk(chunk, meta);
+        } catch (e) {
+          encodeError = new Error(
+            kind === 'mp4'
+              ? `MP4 muxing failed (${(e as Error).message}). This browser's H.264 encoder did not provide a decoder configuration — try the WebM or PNG sequence export.`
+              : (e as Error).message,
+          );
+        }
+      },
       error: (e) => { encodeError = e as Error; },
     });
-    encoder.configure({ codec, width, height, bitrate, framerate: fps });
+    const config: VideoEncoderConfig = { codec, width, height, bitrate, framerate: fps };
+    if (kind === 'mp4') {
+      // 'avc' bitstream format makes the encoder emit a decoderConfig
+      // description with the first chunk — without it some browsers
+      // (Firefox) produce annex-b chunks and mp4-muxer fails with
+      // "track.info.decoderConfig is null"
+      config.avc = { format: 'avc' };
+    }
+    encoder.configure(config);
 
     for (let i = 0; i < total; i++) {
       if (cancelled) {

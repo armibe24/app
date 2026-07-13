@@ -119,10 +119,10 @@ export function SliderRow(props: {
   };
 
   const title = props.disabled ? props.disabledReason : props.tooltip;
+  const resetValue = () => applyValue(getPath(defaultSettings, props.path) as number);
   return (
     <div className={`control${props.disabled ? ' disabled' : ''}`} title={props.disabled ? props.disabledReason : undefined}>
       <div className="control-head">
-        <Label text={props.label} path={props.path} tooltip={title} />
         {keyable ? (
           <button
             type="button"
@@ -138,6 +138,7 @@ export function SliderRow(props: {
               fill={keyHere ? 'currentColor' : 'none'} />
           </button>
         ) : null}
+        <Label text={props.label} path={props.path} tooltip={title} />
         <div className="control-valuebox">
           {editing ? (
             <input
@@ -170,7 +171,9 @@ export function SliderRow(props: {
         min={props.min} max={props.max} step={props.step ?? 0.01}
         value={Number.isFinite(value) ? value : props.min}
         disabled={props.disabled}
+        title="Double-click to reset"
         onChange={e => applyValue(parseFloat(e.target.value))}
+        onDoubleClick={resetValue}
       />
     </div>
   );

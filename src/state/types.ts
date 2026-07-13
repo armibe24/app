@@ -174,7 +174,7 @@ export const defaultSettings: Settings = {
   scene: {
     scale: 1, posX: 0, posY: 0, posZ: 0, rotX: 0, rotY: 0, rotZ: 0, fov: 45,
   },
-  camera: { projection: 'perspective' },
+  camera: { projection: 'orthographic' },
   viewport: {
     showGrid: false, showAxes: false, showBox: false,
     showFrame: true, passepartout: 0.6,

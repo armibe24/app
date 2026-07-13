@@ -6,7 +6,7 @@
 import { useState, useSyncExternalStore } from 'react';
 import {
   Image as ImageIcon, LayoutGrid, Mountain, Waves, Palette, Video, Download,
-  ImagePlus, Trash2, Camera, Film, XCircle,
+  ImagePlus, Trash2, Camera, Film, XCircle, Move3d,
 } from 'lucide-react';
 import { store, useSettings } from '../state/store';
 import { useSourceImage } from '../hooks/useSourceImage';
@@ -25,7 +25,7 @@ import { toast } from './ui/toast';
 
 /* ---------------- tabs ---------------- */
 
-type TabId = 'image' | 'geometry' | 'height' | 'animation' | 'appearance' | 'camera' | 'export';
+type TabId = 'image' | 'geometry' | 'height' | 'animation' | 'appearance' | 'object' | 'camera' | 'export';
 
 const TABS: Array<{ id: TabId; label: string; icon: typeof ImageIcon }> = [
   { id: 'image', label: 'Source image', icon: ImageIcon },
@@ -33,6 +33,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof ImageIcon }> = [
   { id: 'height', label: 'Height', icon: Mountain },
   { id: 'animation', label: 'Animation', icon: Waves },
   { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'object', label: 'Object', icon: Move3d },
   { id: 'camera', label: 'Camera & frame', icon: Video },
   { id: 'export', label: 'Export', icon: Download },
 ];
@@ -105,6 +106,7 @@ export function Sidebar() {
         {tab === 'height' ? HeightTab() : null}
         {tab === 'animation' ? <AnimationSections /> : null}
         {tab === 'appearance' ? AppearanceTab() : null}
+        {tab === 'object' ? ObjectTab() : null}
         {tab === 'camera' ? CameraTab() : null}
         {tab === 'export' ? ExportTab({ img: !!img, ex }) : null}
       </div>
@@ -229,6 +231,20 @@ export function Sidebar() {
     );
   }
 
+  function ObjectTab() {
+    return (
+      <Section title="Object" dotColor="var(--sq-ink)">
+        <SliderRow label="Scale" path="scene.scale" min={0.2} max={3} step={0.01} />
+        <SliderRow label="Position X" path="scene.posX" min={-3} max={3} step={0.01} />
+        <SliderRow label="Position Y" path="scene.posY" min={-3} max={3} step={0.01} />
+        <SliderRow label="Position Z" path="scene.posZ" min={-3} max={3} step={0.01} />
+        <SliderRow label="X rotation" path="scene.rotX" min={-180} max={180} step={1} unit="°" />
+        <SliderRow label="Y rotation" path="scene.rotY" min={-180} max={180} step={1} unit="°" />
+        <SliderRow label="Z rotation" path="scene.rotZ" min={-180} max={180} step={1} unit="°" />
+      </Section>
+    );
+  }
+
   function CameraTab() {
     const ratioId = currentRatioId(s.export.width, s.export.height);
     return (
@@ -316,16 +332,6 @@ export function Sidebar() {
           </div>
         </Section>
 
-        <Section title="Object" dotColor="var(--sq-ink)" defaultOpen={false}>
-          <SliderRow label="Scale" path="scene.scale" min={0.2} max={3} step={0.01} />
-          <SliderRow label="Position X" path="scene.posX" min={-3} max={3} step={0.01} />
-          <SliderRow label="Position Y" path="scene.posY" min={-3} max={3} step={0.01} />
-          <SliderRow label="Position Z" path="scene.posZ" min={-3} max={3} step={0.01} />
-          <SliderRow label="X rotation" path="scene.rotX" min={-180} max={180} step={1} unit="°" />
-          <SliderRow label="Y rotation" path="scene.rotY" min={-180} max={180} step={1} unit="°" />
-          <SliderRow label="Z rotation" path="scene.rotZ" min={-180} max={180} step={1} unit="°" />
-        </Section>
-
         <Section title="Helpers (never rendered)" dotColor="var(--sq-blue)" defaultOpen={false}>
           <ToggleRow label="Grid" path="viewport.showGrid" />
           <ToggleRow label="Axes" path="viewport.showAxes" />
@@ -368,7 +374,7 @@ export function Sidebar() {
           disabled={s.export.stillFormat === 'jpeg' && s.export.animFormat !== 'png-seq'}
           disabledReason="JPEG has no alpha channel — use PNG or WebP"
           tooltip="Renders without a background (PNG/WebP stills, PNG sequences)" />
-        <button className="btn btn--teal btn--sm" style={{ justifyContent: 'center' }}
+        <button className="btn btn--sm" style={{ justifyContent: 'center' }}
           disabled={!props.img || props.ex.active}
           title={props.img ? 'Render the current frame at export size' : 'Import an image first'}
           onClick={() => void exportStill(store.get())}>
@@ -396,7 +402,7 @@ export function Sidebar() {
             </span>
           </div>
         ) : null}
-        <button className="btn btn--cyan btn--sm" style={{ justifyContent: 'center' }}
+        <button className="btn btn--sm" style={{ justifyContent: 'center' }}
           disabled={!props.img || props.ex.active}
           title={props.img ? 'Render the loop frame by frame' : 'Import an image first'}
           onClick={() => void exportAnimation(store.get())}>
