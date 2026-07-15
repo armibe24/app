@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import {
-  FilePlus2, ImagePlus, Undo2, Redo2, Settings2, Info, Grid3X3,
+  FilePlus2, ImagePlus, Undo2, Redo2, Settings as SettingsIcon, Info, Grid3X3,
 } from 'lucide-react';
 import { store, useSettings } from '../state/store';
 import { openFilePicker } from '../image/importers';
@@ -56,12 +56,12 @@ export function TopBar() {
 
       <div className="topbar-spacer" />
 
-      <div className="topbar-group">
-        <button className="iconbtn" title="About & shortcuts" onClick={() => setShowAbout(true)}>
-          <Info size={14} strokeWidth={2.4} />
+      <div className="topbar-group" role="toolbar" aria-label="Application">
+        <button className="iconbtn" title="Settings" onClick={() => setShowSettings(true)}>
+          <SettingsIcon size={15} />
         </button>
-        <button className="iconbtn" title="Settings — interface style & custom CSS" onClick={() => setShowSettings(true)}>
-          <Settings2 size={14} strokeWidth={2.4} />
+        <button className="iconbtn" title="About" onClick={() => setShowAbout(true)}>
+          <Info size={15} />
         </button>
       </div>
 

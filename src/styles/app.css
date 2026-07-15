@@ -172,20 +172,31 @@
 /* ============================================================
    SIDEBARS
    ============================================================ */
-.sidebar{width:364px;flex-shrink:0;display:flex;overflow:hidden;
+.sidebar{width:356px;flex-shrink:0;display:flex;overflow:hidden;
   background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(12,28,35,.72));
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .sidebar--right{border-left:1px solid var(--line-strong)}
 
-/* vertical icon rail (Sonitus style) — switches the sidebar tabs */
-.side-rail{width:46px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;
-  gap:5px;padding:12px 0;border-right:1px solid var(--line)}
-.rail-btn{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;
-  justify-content:center;color:var(--ink-soft);background:none;border:1px solid transparent;
-  transition:background var(--transition-fast),color var(--transition-fast)}
-.rail-btn:hover{color:var(--sky-blue);background:rgba(255,255,255,.07)}
-.rail-btn.active{color:#03161c;background:linear-gradient(180deg,#7fdcf4,#46b3cc);
-  box-shadow:var(--gloss-inset),0 3px 10px rgba(70,179,204,.45)}
+/* vertical icon rail — verbatim from the Sonitus reference (its
+   border-left toward the viewport is carried by .sidebar--right here;
+   the rail/panel divider is this border-right) */
+.side-rail{display:flex;flex-direction:column;gap:4px;width:44px;flex-shrink:0;
+  padding:10px 0;align-items:center;
+  border-right:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(9,22,28,.8));
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.rail-btn{position:relative;display:grid;place-items:center;width:34px;height:34px;
+  border-radius:var(--radius-small);border:1px solid transparent;color:var(--ink-dim);
+  background:none;
+  transition:background var(--transition-fast),color var(--transition-fast),
+    border-color var(--transition-fast),box-shadow var(--transition-fast)}
+.rail-btn:hover{background:rgba(255,255,255,.07);color:var(--sky-blue);
+  border-color:var(--line-strong)}
+.rail-btn.active{color:var(--sky-blue);border-color:var(--line-strong);
+  background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(70,179,204,.12));
+  box-shadow:var(--gloss-inset),0 0 10px rgba(70,179,204,.2)}
+.rail-btn.active::before{content:"";position:absolute;left:-6px;top:7px;bottom:7px;width:2px;
+  border-radius:2px;background:var(--sky-blue);box-shadow:0 0 8px rgba(95,198,232,.7)}
 
 .side-panel{flex:1;min-width:0;overflow-y:auto;overflow-x:hidden;padding:6px 16px 32px}
 

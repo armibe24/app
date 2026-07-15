@@ -82,17 +82,20 @@ export function Sidebar() {
 
   return (
     <aside className="sidebar sidebar--right">
-      <nav className="side-rail">
+      <nav className="side-rail" role="tablist" aria-label="Sidebar sections">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
             <button
               key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
+              aria-label={t.label}
               className={`rail-btn${tab === t.id ? ' active' : ''}`}
               title={t.label}
               onClick={() => pickTab(t.id)}
             >
-              <Icon size={15} strokeWidth={2.2} />
+              <Icon size={17} />
             </button>
           );
         })}
